@@ -11,7 +11,7 @@ namespace Streebog
     public static class Streebog
     {
         // пи подстановка
-        private static byte[] pi ={
+        private static readonly byte[] pi ={
         0xfc, 0xee, 0xdd, 0x11, 0xcf, 0x6e, 0x31, 0x16, 0xfb, 0xc4, 0xfa, 0xda, 0x23, 0xc5, 0x04, 0x4d,
         0xe9, 0x77, 0xf0, 0xdb, 0x93, 0x2e, 0x99, 0xba, 0x17, 0x36, 0xf1, 0xbb, 0x14, 0xcd, 0x5f, 0xc1,
         0xf9, 0x18, 0x65, 0x5a, 0xe2, 0x5c, 0xef, 0x21, 0x81, 0x1c, 0x3c, 0x42, 0x8b, 0x01, 0x8e, 0x4f,
@@ -31,7 +31,7 @@ namespace Streebog
         };
 
         // l-подстановка
-        private static ulong[] l = {
+        private static readonly ulong[] l = {
         0x8e20faa72ba0b470, 0x47107ddd9b505a38, 0xad08b0e0c3282d1c, 0xd8045870ef14980e,
         0x6c022c38f90a4c07, 0x3601161cf205268d, 0x1b8e0b0e798c13c8, 0x83478b07b2468764,
         0xa011d380818e8f40, 0x5086e740ce47c920, 0x2843fd2067adea10, 0x14aff010bdd87508,
@@ -51,7 +51,7 @@ namespace Streebog
         };
 
         // перестановка байт
-        private static byte[] t = {
+        private static readonly byte[] t = {
         0, 8, 16, 24, 32, 40, 48, 56,
         1, 9, 17, 25, 33, 41, 49, 57,
         2, 10, 18, 26, 34, 42, 50, 58,
@@ -63,7 +63,7 @@ namespace Streebog
         };
 
         // итерационные константы
-        private static byte[][] C = {
+        private static readonly byte[][] C = {
         new byte[64]{
         0xb1,0x08,0x5b,0xda,0x1e,0xca,0xda,0xe9,0xeb,0xcb,0x2f,0x81,0xc0,0x65,0x7c,0x1f,
         0x2f,0x6a,0x76,0x43,0x2e,0x45,0xd0,0x16,0x71,0x4e,0xb8,0x8d,0x75,0x85,0xc4,0xfc,
@@ -138,8 +138,8 @@ namespace Streebog
         }
         };
 
-        private static readonly byte[] vector0;
-        private static readonly byte[] vector1;
+        private static readonly byte[] vector0; // 0^512
+        private static readonly byte[] vector1; // (00000001)^512
 
         static Streebog()
         {
@@ -148,35 +148,35 @@ namespace Streebog
         }
 
         /// <summary>
-        /// Вычисляет Хэш-код сообщения
+        /// Вычисляет хэш-код сообщения
         /// </summary>
         /// <param name="input">Входная строка</param>
         /// <param name="n">Длина хэш-кода</param>
         public static string GetHashCode(string input, int n)
         {
             byte[] M = ConvertHexStringToByteArray(ConvertStringToHexString(input));
-            // Этап 1
+            // Этап 1 - инициализация начальных параметров
             byte[] IV = n == 256 ? vector1 : vector0; 
             byte[] h = IV;
             byte[] N = vector0;
             byte[] Z = vector0;
             byte[] m;
-            // Этап 2
+            // Этап 2 - сжатие сообщения до размера < 512 бит
             while (M.Length > 64)    
             {
                 m = M.Take(64).ToArray();
                 h = CompressionFunction(N, h, m);
-                N = AddMod(N, ((BigInteger)512).ToByteArray());
-                Z = AddMod(Z, m);
+                N = AddMod512(N, ((BigInteger)512).ToByteArray());
+                Z = AddMod512(Z, m);
                 M = M.Skip(64).ToArray();
             }
-            // Этап 3
+            // Этап 3 - вычисление хэш-кода
             m = new byte[64]; 
             Array.Copy(M, 0, m, 0, M.Length);
             m[M.Length] = 1;
             h = CompressionFunction(N, h, m);
-            N = AddMod(N, ((BigInteger)M.Length * 8).ToByteArray());
-            Z = AddMod(Z, m);
+            N = AddMod512(N, ((BigInteger)M.Length * 8).ToByteArray());
+            Z = AddMod512(Z, m);
             h = CompressionFunction(vector0, h, N);
             h = CompressionFunction(vector0, h, Z);
 
@@ -185,11 +185,11 @@ namespace Streebog
         }
 
         /// <summary>
-        /// Сложение в кольце
+        /// Сложение в кольце 2^512
         /// </summary>
         /// <param name="a">Первое число</param>
         /// <param name="b">Второе число</param>
-        private static byte[] AddMod(byte[] a, byte[] b)
+        private static byte[] AddMod512(byte[] a, byte[] b)
         {
             byte[] tmp = (new BigInteger(a) + new BigInteger(b) % BigInteger.Pow(2, 512)).ToByteArray();
             byte[] res = new byte[64];
