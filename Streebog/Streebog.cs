@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Numerics;
 using System.Collections;
+using ExtensionMethods;
 
 namespace Streebog
 {
@@ -154,7 +155,7 @@ namespace Streebog
         /// <param name="n">Длина хэш-кода</param>
         public static string GetHashCode(string input, int n)
         {
-            byte[] M = ConvertHexStringToByteArray(ConvertStringToHexString(input));
+            byte[] M = input.ToHexString().ToByteArray();
             // Этап 1 - инициализация начальных параметров
             byte[] IV = n == 256 ? vector1 : vector0; 
             byte[] h = IV;
@@ -180,8 +181,7 @@ namespace Streebog
             h = CompressionFunction(vector0, h, N);
             h = CompressionFunction(vector0, h, Z);
 
-            return n == 256 ? ConvertByteArrayToHexString(h.Skip(32).ToArray()) 
-                : ConvertByteArrayToHexString(h);
+            return n == 256 ? h.Skip(32).ToArray().ToHexString() : h.ToHexString();
         }
 
         /// <summary>
@@ -309,38 +309,6 @@ namespace Streebog
                 result[i] = (byte)(k[i] ^ a[i]);
             }
             return result;
-        }
-
-        /// <summary>
-        /// Выполняет преобразование строки в ее 16-ричный вид
-        /// </summary>
-        /// <param name="input">Входная строка</param>
-        private static string ConvertStringToHexString(string input)
-        {
-            return string.Join("", input.Select(c => ((int)c).ToString("X2")));
-        }
-
-        /// <summary>
-        /// Выполняется преобразование массива байт в hex строку
-        /// </summary>
-        /// <param name="input">Входная строка</param>
-        private static string ConvertByteArrayToHexString(this byte[] input)
-        {
-            return BitConverter.ToString(input.Reverse().ToArray()).Replace("-", "").ToLower();
-        }
-
-        /// <summary>
-        /// Выполняет преобразование hex строки в массив байт
-        /// </summary>
-        /// <param name="input">Входная строка</param>
-        private static byte[] ConvertHexStringToByteArray(this string input)
-        {
-            byte[] bytes = new byte[input.Length / 2];
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                bytes[i] = Convert.ToByte(input.Substring((bytes.Length - i - 1) * 2, 2), 16);
-            }
-            return bytes;
         }
     }
 }

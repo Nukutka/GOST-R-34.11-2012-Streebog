@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Streebog
 {
@@ -10,8 +6,12 @@ namespace Streebog
     {
         static void Main(string[] args)
         {
-            string hash = Streebog.GetHashCode("210987654321098765432109876543210987654321098765432109876543210", 256);
-            Console.WriteLine(hash);
+            Console.WriteLine("Введите сообщение для получения хэш-кода:");
+            string message = Console.ReadLine();
+            string hash256 = Streebog.GetHashCode(message, 256);
+            string hash512 = Streebog.GetHashCode(message, 512);
+            Console.WriteLine($"256-битный хэш-код:\n{hash256}");
+            Console.WriteLine($"512-битный хэш-код:\n{hash512}");
         }
     }
 }
